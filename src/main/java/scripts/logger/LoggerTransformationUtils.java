@@ -8,6 +8,8 @@ import java.util.regex.Matcher;
 
 public class LoggerTransformationUtils {
 
+    public static boolean isWrapperImportNeeded = false;
+
     public static String reformatLogger(Matcher matcher) {
         String loggerLevel = getLoggingLevel(
             OldLoggingLevels.valueOf(matcher.group(2))
@@ -20,8 +22,12 @@ public class LoggerTransformationUtils {
     }
 
     public static String getLoggerImports() {
-        return "import org.slf4j.Logger;\n"
+        String defaultImports = "import org.slf4j.Logger;\n"
             + "import org.slf4j.LoggerFactory;\n";
+        if (isWrapperImportNeeded) {
+            defaultImports += "import com.cellpointdigital.mesb.log.LoggerObjectWrapper;\n";
+        }
+        return defaultImports;
     }
 
     public static String getLoggerVarDeclaration(String className) {
@@ -54,14 +60,43 @@ public class LoggerTransformationUtils {
             }
         }
         if (optionalObject.isPresent()) {
-            message.append(" {}");
-            nonMessageArgs.add(
-                optionalObject.get().replaceFirst(",", "").trim()
-            );
+            isWrapperImportNeeded = true;
+            String additionalArgs = optionalObject.get().replaceFirst(",", "").trim();
+            getCompliantAdditionalArguments(additionalArgs).forEach(arg -> {
+                message.append(" {}");
+                nonMessageArgs.add(
+                    wrapIntoProperStringFormat(
+                        arg.trim()
+                    )
+                );
+            });
         }
         message.append("\"");
         nonMessageArgs.forEach(arg -> message.append(", ").append(arg));
         return message.toString();
+    }
+
+    private static List<String> getCompliantAdditionalArguments(String additionalArgs) {
+        String[] separatedLines = additionalArgs.split(",");
+        List<String> compliantArgs = new ArrayList<>();
+        StringBuilder compliantStringArgument = new StringBuilder();
+        for (String arg : separatedLines) {
+            compliantStringArgument.append(arg);
+            if (checkParenthesis(compliantStringArgument.toString())) {
+                compliantArgs.add(compliantStringArgument.toString());
+                compliantStringArgument = new StringBuilder();
+            } else {
+                compliantStringArgument.append(",");
+            }
+        }
+        if (!compliantStringArgument.isEmpty()) {
+            compliantArgs.add(compliantStringArgument.toString());
+        }
+        return compliantArgs;
+    }
+
+    private static String wrapIntoProperStringFormat(String arg) {
+        return "new LoggerObjectWrapper(" + arg + ")";
     }
 
     private static String constructFinalLoggerVersion(String level, String message) {
@@ -70,6 +105,21 @@ public class LoggerTransformationUtils {
 
     private enum OldLoggingLevels {
         TRACE, DEBUG, NOTICE, WARNING, EXCEPTION, ERROR
+    }
+
+    private static boolean checkParenthesis(String str) {
+        int counter = 0;
+        for (int i = 0; i < str.length(); i++) {
+            if (str.charAt(i) == '(') {
+                counter++;
+            } else if (str.charAt(i) == ')') {
+                counter--;
+            }
+            if (counter < 0) {
+                return false;
+            }
+        }
+        return counter == 0;
     }
 
 }

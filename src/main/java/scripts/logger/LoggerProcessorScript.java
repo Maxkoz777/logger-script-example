@@ -88,6 +88,7 @@ public class LoggerProcessorScript {
     };
 
     private static void reformatClassLogger(File file) {
+        LoggerTransformationUtils.isWrapperImportNeeded = false;
         String initialText;
         try {
             initialText = Files.readString(file.toPath());
