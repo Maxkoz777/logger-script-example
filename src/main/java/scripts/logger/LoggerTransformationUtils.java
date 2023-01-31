@@ -5,12 +5,22 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.regex.Matcher;
+import lombok.extern.slf4j.Slf4j;
+import scripts.logger.model.ProcessingFile;
+import scripts.logger.processors.OptionalArgsProcessor;
+import scripts.logger.processors.impl.MultipleArgsProcessor;
+import scripts.logger.processors.impl.ObjectClassProcessor;
+import scripts.logger.processors.impl.ThrowableArgsProcessor;
 
+@Slf4j
 public class LoggerTransformationUtils {
 
     public static boolean isWrapperImportNeeded = false;
+    public static OptionalArgsProcessor optionalArgsProcessor = new ThrowableArgsProcessor();
+    private static ProcessingFile currentProcessingFile = null;
 
-    public static String reformatLogger(Matcher matcher) {
+    public static void reformatLogger(Matcher matcher, ProcessingFile processingFile) {
+        currentProcessingFile = processingFile;
         String loggerLevel = getLoggingLevel(
             OldLoggingLevels.valueOf(matcher.group(2))
         );
@@ -18,7 +28,7 @@ public class LoggerTransformationUtils {
             .replaceAll(PatternUtils.LOGGING_DEBUG_MARK_PATTERN.pattern(), "");
         String additionalObject = matcher.group(3);
         String message = getLoggerMessage(loggerMessage, Optional.ofNullable(additionalObject));
-        return constructFinalLoggerVersion(loggerLevel, message);
+        processingFile.getUpdatedLoggerLines().add(constructFinalLoggerVersion(loggerLevel, message));
     }
 
     public static String getLoggerImports() {
@@ -34,7 +44,7 @@ public class LoggerTransformationUtils {
         return "private static final Logger " + LOGGER_VAR_NAME + " = LoggerFactory.getLogger(" + className + ".class);\n";
     }
 
-    private static final String LOGGER_VAR_NAME = "loggerLongUniqueName";
+    public static final String LOGGER_VAR_NAME = "loggerLongUniqueName";
 
     private static String getLoggingLevel(OldLoggingLevels oldLevel) {
         return switch (oldLevel) {
@@ -63,18 +73,36 @@ public class LoggerTransformationUtils {
         if (optionalObject.isPresent()) {
             isWrapperImportNeeded = true;
             String additionalArgs = optionalObject.get().replaceFirst(",", "").trim();
-            getCompliantAdditionalArguments(additionalArgs).forEach(arg -> {
-                message.append(" {}");
-                nonMessageArgs.add(
-                    wrapIntoProperStringFormat(
-                        arg.trim()
-                    )
-                );
-            });
+            List<String> compliantArgsList = getCompliantAdditionalArguments(additionalArgs);
+            initializeArgsProcessor(compliantArgsList);
+            optionalArgsProcessor.propagateLoggerMessage(message, nonMessageArgs, compliantArgsList);
         }
         message.append("\"");
         nonMessageArgs.forEach(arg -> message.append(", ").append(arg));
         return message.toString();
+    }
+
+    private static void initializeArgsProcessor(List<String> args) {
+        if (args.size() == 2) {
+            optionalArgsProcessor = new MultipleArgsProcessor();
+        } else if (isThrowable()) {
+            optionalArgsProcessor = new ThrowableArgsProcessor();
+        } else {
+            optionalArgsProcessor = new ObjectClassProcessor();
+        }
+    }
+
+    private static boolean isThrowable() {
+        int currentLoggerIndex = currentProcessingFile.getCurrentProcessingLineIndex();
+        if (currentLoggerIndex == -1) {
+            log.error("File {} can't be processed", currentProcessingFile.getFile().getName());
+        }
+        for (int i = currentLoggerIndex; i > currentLoggerIndex - 10; i--) {
+            if (currentProcessingFile.getInitialTextLines().get(i).contains("catch")) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static List<String> getCompliantAdditionalArguments(String additionalArgs) {
@@ -97,11 +125,16 @@ public class LoggerTransformationUtils {
     }
 
     private static String wrapIntoProperStringFormat(String arg) {
-        return "new LoggerObjectWrapper(" + arg + ")";
+        return "LoggerObjectWrapper.wrap(" + arg + ")";
     }
 
     private static String constructFinalLoggerVersion(String level, String message) {
-        return LOGGER_VAR_NAME + "." + level + "(" + message + ");\n";
+        Optional<String> optionalLogger = optionalArgsProcessor.getOptionalSecondLogger(level);
+        String finalLoggerVersion = LOGGER_VAR_NAME + "." + level + "(" + message + ");\n";
+        if (optionalLogger.isPresent()) {
+            finalLoggerVersion += optionalLogger.get();
+        }
+        return finalLoggerVersion;
     }
 
     private enum OldLoggingLevels {
