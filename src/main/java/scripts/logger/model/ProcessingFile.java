@@ -1,6 +1,8 @@
 package scripts.logger.model;
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -19,6 +21,33 @@ public class ProcessingFile {
 
     public ProcessingFile(File file) {
         this.file = file;
+        updateFileContent();
+    }
+
+    public ProcessingFile inlineLoggingStatements() {
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter(file))) {
+            int index = 0;
+            while (index < initialTextLines.size()) {
+                StringBuilder line = new StringBuilder(initialTextLines.get(index));
+                if (line.toString().contains("FileLogger.log")) {
+                    while (!initialTextLines.get(index).trim().contains(");")) {
+                        line.append(" ")
+                            .append(initialTextLines.get(++index).trim()
+                            );
+                    }
+                }
+                bw.write(line.toString());
+                bw.newLine();
+                index++;
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        updateFileContent();
+        return this;
+    }
+
+    private void updateFileContent() {
         Path path = file.toPath();
         try {
             content = Files.readString(path);
@@ -26,10 +55,6 @@ public class ProcessingFile {
         } catch (IOException exception) {
             log.error("Unable to read file {} content", file.getName(), exception);
         }
-    }
-
-    public void inlineLoggingStatements() {
-
     }
 
 }

@@ -33,42 +33,10 @@ public class ScriptProcessingUnit {
         getAllFilesForDirectory(directoryPath).stream()
             .filter(filterClassesToRefactor)
             .peek(fileNameLogger)
-            .map(this::removeLoggingLineSeparator)
+            .map(ProcessingFile::new)
+            .map(ProcessingFile::inlineLoggingStatements)
+            .map(ProcessingFile::getFile)
             .forEach(this::reformatClassLogger);
-
-    }
-
-    private File removeLoggingLineSeparator(File file) {
-        List<String> lines = new ArrayList<>();
-
-        try (BufferedReader br = new BufferedReader(new FileReader(file))) {
-            String line;
-            while ((line = br.readLine()) != null) {
-                lines.add(line);
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        try (BufferedWriter bw = new BufferedWriter(new FileWriter(file))) {
-            int index = 0;
-            while (index < lines.size()) {
-                StringBuilder line = new StringBuilder(lines.get(index));
-                if (line.toString().contains("FileLogger.log")) {
-                    while (!lines.get(index).trim().contains(");")) {
-                        line.append(" ")
-                            .append(lines.get(++index).trim()
-                            );
-                    }
-                }
-                bw.write(line.toString());
-                bw.newLine();
-                index++;
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return file;
 
     }
 
