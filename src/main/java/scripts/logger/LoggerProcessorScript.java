@@ -15,19 +15,20 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.stream.Stream;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@Slf4j
 public class LoggerProcessorScript {
 
-    private static Logger logger = LoggerFactory.getLogger(LoggerProcessorScript.class);
     private static final String TEST_DIRECTORY_PATH = "/Users/user/Documents/Projects/files";
     private static final String DIRECTORY_PATH = "/Users/user/Downloads/mesb/server/src/main/java/com/cellpointdigital";
 
     public static void main(String[] args) {
 
         // todo: add object for processing inside script
-        logger.info("\n\nFiles that will be changed:\n");
+        log.info("\n\nFiles that will be changed:\n");
         getAllFilesForDirectory(DIRECTORY_PATH).stream()
             .filter(filterClassesToRefactor)
             .peek(fileNameLogger)
@@ -74,16 +75,16 @@ public class LoggerProcessorScript {
             String text = Files.readString(file.toPath());
             return PatternUtils.LOGGER_EXISTS_PATTERN.matcher(text).find();
         } catch (IOException e) {
-            logger.error("Unable to parse file {}", file.getName());
+            log.error("Unable to parse file {}", file.getName());
             return false;
         }
     };
 
     private static final Consumer<File> fileNameLogger = file -> {
         try {
-            logger.info(file.getCanonicalPath());
+            log.info(file.getCanonicalPath());
         } catch (IOException e) {
-            logger.error(e.getMessage());
+            log.error(e.getMessage());
             throw new RuntimeException(e);
         }
     };
@@ -94,7 +95,7 @@ public class LoggerProcessorScript {
         try {
             initialText = Files.readString(file.toPath());
         } catch (IOException e) {
-            logger.error(e.getMessage());
+            log.error(e.getMessage());
             throw new RuntimeException(e);
         }
         List<String> reformattedStrings = new LinkedList<>();
@@ -166,7 +167,7 @@ public class LoggerProcessorScript {
         try (FileWriter writer = new FileWriter(file)) {
             writer.write(content);
         } catch (IOException e) {
-            logger.error(e.getMessage());
+            log.error(e.getMessage());
         }
     }
 
