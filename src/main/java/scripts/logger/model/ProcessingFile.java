@@ -19,6 +19,7 @@ public class ProcessingFile {
     private String content;
     private List<String> initialTextLines;
     private List<String> updatedLoggerLines = new LinkedList<>();
+    private int currentProcessingLineIndex = -1;
 
     public ProcessingFile(File file) {
         this.file = file;
@@ -33,8 +34,7 @@ public class ProcessingFile {
                 if (line.toString().contains("FileLogger.log")) {
                     while (!initialTextLines.get(index).trim().contains(");")) {
                         line.append(" ")
-                            .append(initialTextLines.get(++index).trim()
-                            );
+                            .append(initialTextLines.get(++index).trim());
                     }
                 }
                 bw.write(line.toString());
@@ -46,6 +46,15 @@ public class ProcessingFile {
         }
         updateFileContent();
         return this;
+    }
+
+    public void computeCurrentProcessingLineIndex(String matchedLine) {
+        for (int i = 0; i < initialTextLines.size(); i++) {
+            if (initialTextLines.get(i).trim().contains(matchedLine)) {
+                currentProcessingLineIndex = i;
+                break;
+            }
+        }
     }
 
     private void updateFileContent() {
