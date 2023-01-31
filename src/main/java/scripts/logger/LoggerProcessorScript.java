@@ -26,6 +26,7 @@ public class LoggerProcessorScript {
 
     public static void main(String[] args) {
 
+        // todo: add object for processing inside script
         logger.info("\n\nFiles that will be changed:\n");
         getAllFilesForDirectory(DIRECTORY_PATH).stream()
             .filter(filterClassesToRefactor)

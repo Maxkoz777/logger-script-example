@@ -46,6 +46,7 @@ public class LoggerTransformationUtils {
         };
     }
 
+    // todo: delete " - " if exist
     private static String getLoggerMessage(String line, Optional<String> optionalObject) {
         StringBuilder message = new StringBuilder("\"");
         List<String> mixedArguments = Arrays.stream(line.split("\\+"))
