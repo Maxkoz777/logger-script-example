@@ -7,6 +7,8 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -171,23 +173,15 @@ public class ScriptProcessingUnit {
         }
     }
 
-
     private List<File> getAllFilesForDirectory(String directoryPath) {
-        List<File> files = new ArrayList<>();
-        File directory = new File(directoryPath);
-        if (directory.exists() && directory.isDirectory()) {
-            getAllFiles(directory, files);
-        }
-        return files;
-    }
-
-    private void getAllFiles(File dir, List<File> files) {
-        for (File file : dir.listFiles()) {
-            if (file.isFile()) {
-                files.add(file);
-            } else if (file.isDirectory()) {
-                getAllFiles(file, files);
-            }
+        try {
+            return Files.walk(Paths.get(directoryPath))
+                .filter(Files::isRegularFile)
+                .map(Path::toFile)
+                .toList();
+        } catch (IOException e) {
+            log.error("Unable to process all files inside {}", directoryPath, e);
+            throw new RuntimeException(e);
         }
     }
 
