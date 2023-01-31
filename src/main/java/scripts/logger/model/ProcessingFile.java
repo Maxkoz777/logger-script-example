@@ -6,6 +6,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.LinkedList;
 import java.util.List;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -17,7 +18,7 @@ public class ProcessingFile {
     private File file;
     private String content;
     private List<String> initialTextLines;
-    private List<String> updatedLoggerLines;
+    private List<String> updatedLoggerLines = new LinkedList<>();
 
     public ProcessingFile(File file) {
         this.file = file;

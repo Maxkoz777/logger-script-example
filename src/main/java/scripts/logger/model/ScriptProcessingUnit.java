@@ -1,16 +1,11 @@
 package scripts.logger.model;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -35,7 +30,6 @@ public class ScriptProcessingUnit {
             .peek(fileNameLogger)
             .map(ProcessingFile::new)
             .map(ProcessingFile::inlineLoggingStatements)
-            .map(ProcessingFile::getFile)
             .forEach(this::reformatClassLogger);
 
     }
@@ -59,34 +53,27 @@ public class ScriptProcessingUnit {
         }
     };
 
-    private void reformatClassLogger(File file) {
+    private void reformatClassLogger(ProcessingFile processingFile) {
         LoggerTransformationUtils.isWrapperImportNeeded = false;
-        String initialText;
-        try {
-            initialText = Files.readString(file.toPath());
-        } catch (IOException e) {
-            log.error(e.getMessage());
-            throw new RuntimeException(e);
-        }
-        List<String> reformattedStrings = new LinkedList<>();
-        Matcher matcher = PatternUtils.LOGGING_STATEMENT_PATTERN.matcher(initialText);
+        File file = processingFile.getFile();
+        Matcher matcher = PatternUtils.LOGGING_STATEMENT_PATTERN.matcher(processingFile.getContent());
         while (matcher.find()) {
-            reformattedStrings.add(
+            processingFile.getUpdatedLoggerLines().add(
                 LoggerTransformationUtils.reformatLogger(matcher)
             );
         }
-        String newContent = createNewClassContent(initialText.trim(), reformattedStrings);
+        String newContent = createNewClassContent(processingFile);
         updateJavaClass(newContent, file);
     }
 
-    private String createNewClassContent(String text, List<String> reformattedStrings) {
+    private String createNewClassContent(ProcessingFile processingFile) {
         StringBuilder updatedContent = new StringBuilder();
         boolean importsAdded = false;
         boolean loggerDeclarationAdded = false;
-        String[] lines = text.split("\n");
+        List<String> lines = processingFile.getInitialTextLines();
         int index = 0;
-        while (index < lines.length) {
-            String line = lines[index];
+        while (index < lines.size()) {
+            String line = lines.get(index);
             if (!importsAdded) {
                 if (!line.contains("package")) {
                     updatedContent.append(line).append("\n");
@@ -103,9 +90,9 @@ public class ScriptProcessingUnit {
                 Matcher matcher = PatternUtils.CLASS_DECLARATION.matcher(line);
                 if (matcher.find() && !isPartOfComment(line)) {
                     updatedContent.append(line).append("\n");
-                    if (lines[index + 1].contains("{") && !lines[index].contains("{")) {
+                    if (lines.get(index + 1).contains("{") && !lines.get(index).contains("{")) {
                         index++;
-                        updatedContent.append(lines[index]).append("\n");
+                        updatedContent.append(lines.get(index)).append("\n");
                     }
                     updatedContent.append(LoggerTransformationUtils.getLoggerVarDeclaration(matcher.group(1)));
                     loggerDeclarationAdded = true;
@@ -120,7 +107,7 @@ public class ScriptProcessingUnit {
                     updatedContent.append(line, 0, loggingIndexStart);
                 }
                 updatedContent.append(
-                    reformattedStrings.remove(0)
+                    processingFile.getUpdatedLoggerLines().remove(0)
                 );
                 if (matcher.end() != line.length()) {
                     updatedContent.append(line.substring(matcher.end())).append("\n");
@@ -142,8 +129,8 @@ public class ScriptProcessingUnit {
     }
 
     private List<File> getAllFilesForDirectory(String directoryPath) {
-        try {
-            return Files.walk(Paths.get(directoryPath))
+        try (Stream<Path> pathStream = Files.walk(Paths.get(directoryPath))) {
+            return pathStream
                 .filter(Files::isRegularFile)
                 .map(Path::toFile)
                 .toList();
