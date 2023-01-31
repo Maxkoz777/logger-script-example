@@ -58,9 +58,8 @@ public class ScriptProcessingUnit {
         File file = processingFile.getFile();
         Matcher matcher = PatternUtils.LOGGING_STATEMENT_PATTERN.matcher(processingFile.getContent());
         while (matcher.find()) {
-            processingFile.getUpdatedLoggerLines().add(
-                LoggerTransformationUtils.reformatLogger(matcher)
-            );
+            processingFile.computeCurrentProcessingLineIndex(matcher.group());
+            LoggerTransformationUtils.reformatLogger(matcher, processingFile);
         }
         String newContent = createNewClassContent(processingFile);
         updateJavaClass(newContent, file);
