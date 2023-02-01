@@ -24,13 +24,17 @@ public class ScriptProcessingUnit {
 
     public void process() {
 
-        log.info("\n\nFiles that will be changed:\n");
-        getAllFilesForDirectory(directoryPath).stream()
-            .filter(filterClassesToRefactor)
-            .peek(fileNameLogger)
-            .map(ProcessingFile::new)
-            .map(ProcessingFile::inlineLoggingStatements)
-            .forEach(this::reformatClassLogger);
+        try {
+            Files.walk(Paths.get(directoryPath))
+                .filter(Files::isRegularFile)
+                .map(Path::toFile)
+                .filter(filterClassesToRefactor)
+                .map(ProcessingFile::new)
+                .map(ProcessingFile::inlineLoggingStatements)
+                .forEach(this::reformatClassLogger);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
 
     }
 
@@ -41,15 +45,6 @@ public class ScriptProcessingUnit {
         } catch (IOException e) {
             log.error("Unable to parse file {}", file.getName());
             return false;
-        }
-    };
-
-    private final Consumer<File> fileNameLogger = file -> {
-        try {
-            log.info(file.getCanonicalPath());
-        } catch (IOException e) {
-            log.error(e.getMessage());
-            throw new RuntimeException(e);
         }
     };
 
@@ -124,18 +119,6 @@ public class ScriptProcessingUnit {
             writer.write(content);
         } catch (IOException e) {
             log.error(e.getMessage());
-        }
-    }
-
-    private List<File> getAllFilesForDirectory(String directoryPath) {
-        try (Stream<Path> pathStream = Files.walk(Paths.get(directoryPath))) {
-            return pathStream
-                .filter(Files::isRegularFile)
-                .map(Path::toFile)
-                .toList();
-        } catch (IOException e) {
-            log.error("Unable to process all files inside {}", directoryPath, e);
-            throw new RuntimeException(e);
         }
     }
 
