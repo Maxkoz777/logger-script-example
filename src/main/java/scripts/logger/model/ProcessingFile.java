@@ -15,19 +15,19 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class ProcessingFile {
 
-    private File file;
+    private Path path;
     private String content;
     private List<String> initialTextLines;
     private List<String> updatedLoggerLines = new LinkedList<>();
     private int currentProcessingLineIndex = -1;
 
-    public ProcessingFile(File file) {
-        this.file = file;
+    public ProcessingFile(Path path) {
+        this.path = path;
         updateFileContent();
     }
 
     public ProcessingFile inlineLoggingStatements() {
-        try (BufferedWriter bw = new BufferedWriter(new FileWriter(file))) {
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter(path.toFile()))) {
             int index = 0;
             while (index < initialTextLines.size()) {
                 StringBuilder line = new StringBuilder(initialTextLines.get(index));
@@ -58,12 +58,11 @@ public class ProcessingFile {
     }
 
     private void updateFileContent() {
-        Path path = file.toPath();
         try {
             content = Files.readString(path);
             initialTextLines = Files.readAllLines(path);
         } catch (IOException exception) {
-            log.error("Unable to read file {} content", file.getName(), exception);
+            log.error("Unable to read file {} content", path.getFileName(), exception);
         }
     }
 

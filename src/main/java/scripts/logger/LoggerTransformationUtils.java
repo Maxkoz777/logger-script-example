@@ -95,7 +95,7 @@ public class LoggerTransformationUtils {
     private static boolean isThrowable() {
         int currentLoggerIndex = currentProcessingFile.getCurrentProcessingLineIndex();
         if (currentLoggerIndex == -1) {
-            log.error("File {} can't be processed", currentProcessingFile.getFile().getName());
+            log.error("File {} can't be processed", currentProcessingFile.getPath().getFileName());
         }
         for (int i = currentLoggerIndex; i > currentLoggerIndex - 10; i--) {
             if (currentProcessingFile.getInitialTextLines().get(i).contains("catch")) {

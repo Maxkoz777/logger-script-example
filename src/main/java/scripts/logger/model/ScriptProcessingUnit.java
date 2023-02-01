@@ -27,7 +27,6 @@ public class ScriptProcessingUnit {
         try {
             Files.walk(Paths.get(directoryPath))
                 .filter(Files::isRegularFile)
-                .map(Path::toFile)
                 .filter(filterClassesToRefactor)
                 .map(ProcessingFile::new)
                 .map(ProcessingFile::inlineLoggingStatements)
@@ -38,19 +37,19 @@ public class ScriptProcessingUnit {
 
     }
 
-    private final Predicate<File> filterClassesToRefactor = file -> {
+    private final Predicate<Path> filterClassesToRefactor = path -> {
         try {
-            String text = Files.readString(file.toPath());
+            String text = Files.readString(path);
             return PatternUtils.LOGGER_EXISTS_PATTERN.matcher(text).find();
         } catch (IOException e) {
-            log.error("Unable to parse file {}", file.getName());
+            log.error("Unable to parse file {}", path.getFileName());
             return false;
         }
     };
 
     private void reformatClassLogger(ProcessingFile processingFile) {
         LoggerTransformationUtils.isWrapperImportNeeded = false;
-        File file = processingFile.getFile();
+        File file = processingFile.getPath().toFile();
         Matcher matcher = PatternUtils.LOGGING_STATEMENT_PATTERN.matcher(processingFile.getContent());
         while (matcher.find()) {
             processingFile.computeCurrentProcessingLineIndex(matcher.group());
