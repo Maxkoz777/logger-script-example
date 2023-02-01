@@ -124,15 +124,11 @@ public class LoggerTransformationUtils {
         return compliantArgs;
     }
 
-    private static String wrapIntoProperStringFormat(String arg) {
-        return "LoggerObjectWrapper.wrap(" + arg + ")";
-    }
-
     private static String constructFinalLoggerVersion(String level, String message) {
-        Optional<String> optionalLogger = optionalArgsProcessor.getOptionalSecondLogger(level);
+        String secondLogger = optionalArgsProcessor.getSecondLogger(level);
         String finalLoggerVersion = LOGGER_VAR_NAME + "." + level + "(" + message + ");\n";
-        if (optionalLogger.isPresent()) {
-            finalLoggerVersion += optionalLogger.get();
+        if (!secondLogger.isBlank()) {
+            finalLoggerVersion += secondLogger;
         }
         return finalLoggerVersion;
     }

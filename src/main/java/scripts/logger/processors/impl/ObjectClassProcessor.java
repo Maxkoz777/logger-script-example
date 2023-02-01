@@ -13,8 +13,8 @@ public class ObjectClassProcessor implements OptionalArgsProcessor {
     }
 
     @Override
-    public Optional<String> getOptionalSecondLogger(String level) {
-        return Optional.empty();
+    public String getSecondLogger(String level) {
+        return "";
     }
 
 }
