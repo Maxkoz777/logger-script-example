@@ -1,7 +1,7 @@
-package scripts.logger.processors.impl;
+package scripts.logger.processors.args.impl;
 
 import java.util.List;
-import scripts.logger.processors.OptionalArgsProcessor;
+import scripts.logger.processors.args.OptionalArgsProcessor;
 
 public class ThrowableArgsProcessor implements OptionalArgsProcessor {
 

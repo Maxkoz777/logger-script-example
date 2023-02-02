@@ -1,9 +1,9 @@
-package scripts.logger.processors.impl;
+package scripts.logger.processors.args.impl;
 
 import static scripts.logger.LoggerTransformationUtils.LOGGER_VAR_NAME;
 
 import java.util.List;
-import scripts.logger.processors.OptionalArgsProcessor;
+import scripts.logger.processors.args.OptionalArgsProcessor;
 
 public class MultipleArgsProcessor implements OptionalArgsProcessor {
 

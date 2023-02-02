@@ -1,4 +1,4 @@
-package scripts.logger.processors;
+package scripts.logger.processors.args;
 
 import java.util.List;
 
