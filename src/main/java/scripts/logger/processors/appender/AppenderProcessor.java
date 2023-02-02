@@ -1,11 +1,13 @@
 package scripts.logger.processors.appender;
 
+import java.util.regex.Pattern;
 import lombok.extern.slf4j.Slf4j;
-import scripts.logger.PatternUtils;
 import scripts.logger.model.ProcessingUnit;
 
 @Slf4j
 public abstract class AppenderProcessor {
+
+    private static final Pattern LOGGING_DEBUG_MARK_PATTERN = Pattern.compile("Debug\\.printDebugMark\\(\\)(\\s*\\+)?\\s?,?");
 
     protected int messageGroupNumber;
 
@@ -21,7 +23,7 @@ public abstract class AppenderProcessor {
 
     protected String getLoggerMessageWithArgs() {
         return processingUnit.getMatcher().group(messageGroupNumber)
-            .replaceAll(PatternUtils.LOGGING_DEBUG_MARK_PATTERN.pattern(), "");
+            .replaceAll(LOGGING_DEBUG_MARK_PATTERN.pattern(), "");
     }
 
 }

@@ -3,7 +3,6 @@ package scripts.logger.model;
 import java.util.List;
 import java.util.regex.Matcher;
 import lombok.Data;
-import scripts.logger.PatternUtils;
 
 @Data
 public class ProcessingUnit {

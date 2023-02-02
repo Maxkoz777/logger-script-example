@@ -10,16 +10,20 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import scripts.logger.LoggerTransformationUtils;
-import scripts.logger.PatternUtils;
 
 @Slf4j
 public class ScriptProcessingUnit {
 
     private final String directoryPath;
     private List<String> linesOfCode = new LinkedList<>();
+
+    private static final Pattern CONSOLE_LOGGER_EXISTS_PATTERN = Pattern.compile("System\\.(\\w+)\\.print(ln)?");
+    private static final Pattern CLASS_DECLARATION = Pattern.compile("class\\s(\\w+)\\s?\\{?");
+    public static final Pattern LOGGING_STATEMENT_PATTERN = Pattern.compile("FileLogger\\.log\\(\\s?(.+),\\s*FileLogger\\.(\\w+)\\s*(,.+)?\\);");
 
     public ScriptProcessingUnit(String directoryPath) {
         this.directoryPath = directoryPath;
@@ -82,7 +86,7 @@ public class ScriptProcessingUnit {
         ListIterator<String> listIterator = linesOfCode.listIterator();
         while (listIterator.hasNext()) {
             String line = listIterator.next();
-            Matcher matcher = PatternUtils.CLASS_DECLARATION.matcher(line);
+            Matcher matcher = CLASS_DECLARATION.matcher(line);
             if (matcher.find() && !isPartOfComment(line)) {
                 String className = matcher.group(1);
                 if (line.contains("{")) {
@@ -130,8 +134,8 @@ public class ScriptProcessingUnit {
     }
 
     private boolean isOutdatedLoggingStatement(String line) {
-        Matcher fileLoggerMatcher = PatternUtils.LOGGING_STATEMENT_PATTERN.matcher(line);
-        Matcher consoleLoggerMatcher = PatternUtils.CONSOLE_LOGGER_EXISTS_PATTERN.matcher(line);
+        Matcher fileLoggerMatcher = LOGGING_STATEMENT_PATTERN.matcher(line);
+        Matcher consoleLoggerMatcher = CONSOLE_LOGGER_EXISTS_PATTERN.matcher(line);
         return fileLoggerMatcher.find() || consoleLoggerMatcher.find();
     }
 
@@ -145,61 +149,6 @@ public class ScriptProcessingUnit {
             }
         }
     }
-
-    private String createNewClassContent(ProcessingFile processingFile) {
-        StringBuilder updatedContent = new StringBuilder();
-        boolean importsAdded = false;
-        boolean loggerDeclarationAdded = false;
-        List<String> lines = processingFile.getInitialTextLines();
-        int index = 0;
-        while (index < lines.size()) {
-            String line = lines.get(index);
-            if (!importsAdded) {
-                if (!line.contains("package")) {
-                    updatedContent.append(line).append("\n");
-                    index++;
-                    continue;
-                }
-                updatedContent.append(line).append("\n\n");
-                updatedContent.append(LoggerTransformationUtils.getLoggerImports());
-                importsAdded = true;
-                index++;
-                continue;
-            }
-            if (!loggerDeclarationAdded) {
-                Matcher matcher = PatternUtils.CLASS_DECLARATION.matcher(line);
-                if (matcher.find() && !isPartOfComment(line)) {
-                    updatedContent.append(line).append("\n");
-                    if (lines.get(index + 1).contains("{") && !lines.get(index).contains("{")) {
-                        index++;
-                        updatedContent.append(lines.get(index)).append("\n");
-                    }
-                    updatedContent.append(LoggerTransformationUtils.getLoggerVarDeclaration(matcher.group(1)));
-                    loggerDeclarationAdded = true;
-                    index++;
-                    continue;
-                }
-            }
-            Matcher matcher = PatternUtils.LOGGING_STATEMENT_PATTERN.matcher(line);
-            if (matcher.find()) {
-                int loggingIndexStart = line.indexOf("FileLogger.log");
-                if (loggingIndexStart != 0) {
-                    updatedContent.append(line, 0, loggingIndexStart);
-                }
-                updatedContent.append(
-                    processingFile.getUpdatedLoggerLines().remove(0)
-                );
-                if (matcher.end() != line.length()) {
-                    updatedContent.append(line.substring(matcher.end())).append("\n");
-                }
-            } else {
-                updatedContent.append(line).append("\n");
-            }
-            index++;
-        }
-        return updatedContent.toString();
-    }
-
     private void rewriteJavaClass(String content, File file) {
         try (FileWriter writer = new FileWriter(file)) {
             writer.write(content);
