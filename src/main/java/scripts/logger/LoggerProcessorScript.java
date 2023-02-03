@@ -6,7 +6,7 @@ import scripts.logger.model.ScriptProcessingUnit;
 @Slf4j
 public class LoggerProcessorScript {
 
-    private static final String DIRECTORY_PATH = "/Users/user/Downloads/mesb/server/src/main/java/com/cellpointdigital/mesb";
+    private static final String DIRECTORY_PATH = "/Users/user/Documents/WaveAcess/server/server/src/main/java/com/cellpointdigital/mesb";
 
     public static void main(String[] args) {
 

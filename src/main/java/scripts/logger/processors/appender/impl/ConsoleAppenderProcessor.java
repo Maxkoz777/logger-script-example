@@ -54,7 +54,7 @@ public class ConsoleAppenderProcessor extends AppenderProcessor {
         if (innerMessage.startsWith("\" - ")) {
             innerMessage = innerMessage.replaceFirst("\\s?-\\s", "");
         }
-        return LOGGER_VAR_NAME + "." + getLoggingLevel() + "(" + innerMessage + ");\n";
+        return LOGGER_VAR_NAME + "." + getLoggingLevel() + "(" + innerMessage + ");";
     }
 
 

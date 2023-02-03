@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
@@ -65,21 +66,37 @@ public class ScriptProcessingUnit {
         inlineLoggerStatements();
         updateLoggerStatements();
         addImports();
-        addLoggerImplementation();
-        removeUnusedImports();
+//        addLoggerImplementation();
+        addLoggerAnnotation();
+        removeUnusedImports("import com.cellpointdigitail.basic.Debug;", "import com.cellpointdigital.mesb.log.FileLogger;");
         rewriteJavaClass(String.join("\n", linesOfCode), path.toFile());
     }
 
-    private void removeUnusedImports() {
+    private void removeUnusedImports(String... imports) {
+        int unusedImportsLeft = imports.length;
         ListIterator<String> listIterator = linesOfCode.listIterator();
-        while (listIterator.hasNext()) {
+        while (listIterator.hasNext() && unusedImportsLeft > 0) {
             String line = listIterator.next();
-            if (line.contains("import com.cellpointdigitail.basic.Debug;")) {
+            boolean isLineForDeletion = Arrays.stream(imports).anyMatch(line::contains);
+            if (isLineForDeletion) {
                 listIterator.remove();
-                break;
+                unusedImportsLeft--;
             }
         }
 
+    }
+
+    private void addLoggerAnnotation() {
+        ListIterator<String> listIterator = linesOfCode.listIterator();
+        while (listIterator.hasNext()) {
+            String line = listIterator.next();
+            Matcher matcher = CLASS_DECLARATION.matcher(line);
+            if (matcher.find() && !isPartOfComment(line)) {
+                listIterator.set("@Slf4j");
+                listIterator.add(line);
+                break;
+            }
+        }
     }
 
     private void addLoggerImplementation() {

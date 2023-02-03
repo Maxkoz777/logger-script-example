@@ -25,9 +25,7 @@ public class ProcessingUnit {
     }
 
     public void initializeSurroundings() {
-        prefix = initialLine.trim().startsWith("FileLogger") ?
-            "" :
-            initialLine.substring(0, matcher.start());
+        prefix = initialLine.substring(0, matcher.start());
         postfix = initialLine.trim().endsWith(");") ?
             "" :
             initialLine.substring(matcher.end());

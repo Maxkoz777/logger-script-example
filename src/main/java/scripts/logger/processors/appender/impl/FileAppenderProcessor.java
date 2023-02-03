@@ -118,9 +118,9 @@ public class FileAppenderProcessor extends AppenderProcessor {
         String secondLogger = Objects.nonNull(optionalArgsProcessor)
             ? optionalArgsProcessor.getSecondLogger(level)
             : "";
-        String finalLoggerVersion = LOGGER_VAR_NAME + "." + level + "(" + message + ");\n";
+        String finalLoggerVersion = LOGGER_VAR_NAME + "." + level + "(" + message + ");";
         if (!secondLogger.isBlank()) {
-            finalLoggerVersion += secondLogger;
+            finalLoggerVersion += "\n" + secondLogger;
         }
         return finalLoggerVersion;
     }
