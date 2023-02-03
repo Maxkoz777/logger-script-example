@@ -117,12 +117,12 @@ public class SourceConverter {
             String line = listIterator.next();
             if (isOutdatedLoggingStatement(line) && !line.contains(");") && listIterator.hasNext()) {
                 String followingLine = listIterator.next();
-                while (!followingLine.trim().contains(");")) {
-                    line += " " + followingLine;
+                while (!followingLine.contains(");")) {
+                    line += " " + followingLine.trim();
                     listIterator.remove();
                     followingLine = listIterator.next();
                 }
-                line += " " + followingLine;
+                line += " " + followingLine.trim();
                 listIterator.remove();
                 if (listIterator.hasPrevious()) {
                     listIterator.previous();

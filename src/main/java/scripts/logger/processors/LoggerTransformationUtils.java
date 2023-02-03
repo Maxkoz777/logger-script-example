@@ -46,9 +46,9 @@ public class LoggerTransformationUtils {
     }
 
     public static String getLoggerImports() {
-        String defaultImports = "import lombok.extern.slf4j.Slf4j;\n";
+        String defaultImports = "\nimport lombok.extern.slf4j.Slf4j;\n";
         if (isWrapperImportNeeded) {
-            defaultImports += "import com.cellpointdigital.mesb.log.LoggerObjectWrapper;\n";
+            defaultImports += "import com.cellpointdigital.mesb.log.LoggerObjectWrapper;";
         }
         return defaultImports;
     }
