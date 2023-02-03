@@ -1,19 +1,19 @@
 package scripts.logger.processors.appender.impl;
 
-import static scripts.logger.LoggerTransformationUtils.LOGGER_VAR_NAME;
+import static scripts.logger.processors.LoggerTransformationUtils.LOGGER_VAR_NAME;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import scripts.logger.LoggerTransformationUtils;
 import scripts.logger.model.ProcessingUnit;
 import scripts.logger.processors.appender.AppenderProcessor;
 import scripts.logger.processors.args.OptionalArgsProcessor;
 import scripts.logger.processors.args.impl.MultipleArgsProcessor;
 import scripts.logger.processors.args.impl.ObjectClassProcessor;
 import scripts.logger.processors.args.impl.ThrowableArgsProcessor;
+import scripts.logger.processors.LoggerTransformationUtils;
 
 public class FileAppenderProcessor extends AppenderProcessor {
 

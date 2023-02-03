@@ -1,4 +1,4 @@
-package scripts.logger;
+package scripts.logger.processors;
 
 import java.util.List;
 import java.util.regex.Matcher;
@@ -51,10 +51,6 @@ public class LoggerTransformationUtils {
             defaultImports += "import com.cellpointdigital.mesb.log.LoggerObjectWrapper;\n";
         }
         return defaultImports;
-    }
-
-    public static String getLoggerVarDeclaration(String className) {
-        return "private static final Logger " + LOGGER_VAR_NAME + " = LoggerFactory.getLogger(" + className + ".class);\n";
     }
 
     public static final String LOGGER_VAR_NAME = "log";

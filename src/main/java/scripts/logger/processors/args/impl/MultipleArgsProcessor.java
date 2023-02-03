@@ -1,6 +1,6 @@
 package scripts.logger.processors.args.impl;
 
-import static scripts.logger.LoggerTransformationUtils.LOGGER_VAR_NAME;
+import static scripts.logger.processors.LoggerTransformationUtils.LOGGER_VAR_NAME;
 
 import java.util.List;
 import scripts.logger.processors.args.OptionalArgsProcessor;

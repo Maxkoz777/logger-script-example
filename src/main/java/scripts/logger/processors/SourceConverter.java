@@ -1,56 +1,56 @@
-package scripts.logger.model;
+package scripts.logger.processors;
 
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.ListIterator;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
-import lombok.extern.slf4j.Slf4j;
-import scripts.logger.LoggerTransformationUtils;
+import scripts.logger.model.MyList;
 
-@Slf4j
-public class ScriptProcessingUnit {
+public class SourceConverter {
 
-    private final String directoryPath;
-    private List<String> linesOfCode = new LinkedList<>();
+    private final Path path;
+    private MyList<String> linesOfCode;
 
     private static final Pattern CONSOLE_LOGGER_EXISTS_PATTERN = Pattern.compile("System\\.(\\w+)\\.print(ln)?");
     private static final Pattern CLASS_DECLARATION = Pattern.compile("class\\s(\\w+)\\s?\\{?");
-    public static final Pattern LOGGING_STATEMENT_PATTERN = Pattern.compile("FileLogger\\.log\\(\\s?(.+),\\s*FileLogger\\.(\\w+)\\s*(,.+)?\\);");
+    private static final Pattern LOGGING_STATEMENT_PATTERN = Pattern.compile(
+        "FileLogger\\.log\\(\\s?(.+),\\s*FileLogger\\.(\\w+)\\s*(,.+)?\\);");
 
-    public ScriptProcessingUnit(String directoryPath) {
-        this.directoryPath = directoryPath;
+    private static final Pattern FILE_LOGGER_EXISTS_PATTERN = Pattern.compile("FileLogger\\.log");
+
+    public SourceConverter(Path path) {
+        this.path = path;
     }
 
-    public void process() {
-        try (Stream<Path> filesStream = Files.walk(Paths.get(directoryPath))){
-                filesStream.filter(Files::isRegularFile)
-                .forEach(path -> {
-                    readFile(path);
-                    if (legacyLoggerIncluded()) {
-                        updateFile(path);
-                    }
-                });
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+    public int process() {
 
-    }
-
-    private void readFile(Path path) {
         try {
-            linesOfCode = Files.readAllLines(path);
+            readFile();
+            int initialModCount = linesOfCode.getModCount();
+            if (legacyLoggerIncluded()) {
+                updateFile(path);
+            }
+            int resultModCount = linesOfCode.getModCount();
+
+            int difference = resultModCount - initialModCount;
+            if (difference != 0) {
+                rewriteJavaClass(String.join("\n", linesOfCode), path.toFile());
+            }
+            return difference;
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+
+    }
+
+    private void readFile() throws IOException {
+        linesOfCode = new MyList<>(Files.readAllLines(path));
     }
 
     private boolean legacyLoggerIncluded() {
@@ -68,8 +68,9 @@ public class ScriptProcessingUnit {
         addImports();
 //        addLoggerImplementation();
         addLoggerAnnotation();
-        removeUnusedImports("import com.cellpointdigitail.basic.Debug;", "import com.cellpointdigital.mesb.log.FileLogger;");
-        rewriteJavaClass(String.join("\n", linesOfCode), path.toFile());
+        removeUnusedImports("import com.cellpointdigitail.basic.Debug;",
+                            "import com.cellpointdigital.mesb.log.FileLogger;");
+//        ChangeStatistics.populateStatistics(linesOfCode);
     }
 
     private void removeUnusedImports(String... imports) {
@@ -99,24 +100,6 @@ public class ScriptProcessingUnit {
         }
     }
 
-    private void addLoggerImplementation() {
-        ListIterator<String> listIterator = linesOfCode.listIterator();
-        while (listIterator.hasNext()) {
-            String line = listIterator.next();
-            Matcher matcher = CLASS_DECLARATION.matcher(line);
-            if (matcher.find() && !isPartOfComment(line)) {
-                String className = matcher.group(1);
-                if (line.contains("{")) {
-                    listIterator.add(LoggerTransformationUtils.getLoggerVarDeclaration(className));
-                } else if (listIterator.hasNext()) {
-                    String next = listIterator.next();
-                    listIterator.add(LoggerTransformationUtils.getLoggerVarDeclaration(className));
-                }
-                break;
-            }
-        }
-    }
-
     private void addImports() {
         ListIterator<String> listIterator = linesOfCode.listIterator();
         while (listIterator.hasNext()) {
@@ -131,7 +114,7 @@ public class ScriptProcessingUnit {
     private void inlineLoggerStatements() {
         ListIterator<String> listIterator = linesOfCode.listIterator();
         while (listIterator.hasNext()) {
-            String line = listIterator.next().trim();
+            String line = listIterator.next();
             if (isOutdatedLoggingStatement(line) && !line.contains(");") && listIterator.hasNext()) {
                 String followingLine = listIterator.next();
                 while (!followingLine.trim().contains(");")) {
@@ -151,7 +134,7 @@ public class ScriptProcessingUnit {
     }
 
     private boolean isOutdatedLoggingStatement(String line) {
-        Matcher fileLoggerMatcher = LOGGING_STATEMENT_PATTERN.matcher(line);
+        Matcher fileLoggerMatcher = FILE_LOGGER_EXISTS_PATTERN.matcher(line);
         Matcher consoleLoggerMatcher = CONSOLE_LOGGER_EXISTS_PATTERN.matcher(line);
         return fileLoggerMatcher.find() || consoleLoggerMatcher.find();
     }
@@ -166,11 +149,10 @@ public class ScriptProcessingUnit {
             }
         }
     }
-    private void rewriteJavaClass(String content, File file) {
+
+    private void rewriteJavaClass(String content, File file) throws IOException {
         try (FileWriter writer = new FileWriter(file)) {
             writer.write(content);
-        } catch (IOException e) {
-            log.error(e.getMessage());
         }
     }
 
