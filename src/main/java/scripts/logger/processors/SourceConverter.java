@@ -34,7 +34,7 @@ public class SourceConverter {
             readFile();
             int initialModCount = linesOfCode.getModCount();
             if (legacyLoggerIncluded()) {
-                updateFile(path);
+                updateFile();
             }
             int resultModCount = linesOfCode.getModCount();
 
@@ -62,15 +62,13 @@ public class SourceConverter {
         return false;
     }
 
-    private void updateFile(Path path) {
+    private void updateFile() {
         inlineLoggerStatements();
         updateLoggerStatements();
         addImports();
-//        addLoggerImplementation();
         addLoggerAnnotation();
         removeUnusedImports("import com.cellpointdigitail.basic.Debug;",
                             "import com.cellpointdigital.mesb.log.FileLogger;");
-//        ChangeStatistics.populateStatistics(linesOfCode);
     }
 
     private void removeUnusedImports(String... imports) {
@@ -91,6 +89,9 @@ public class SourceConverter {
         ListIterator<String> listIterator = linesOfCode.listIterator();
         while (listIterator.hasNext()) {
             String line = listIterator.next();
+            if (line.contains("@Slf4j")) {
+                break;
+            }
             Matcher matcher = CLASS_DECLARATION.matcher(line);
             if (matcher.find() && !isPartOfComment(line)) {
                 listIterator.set("@Slf4j");
