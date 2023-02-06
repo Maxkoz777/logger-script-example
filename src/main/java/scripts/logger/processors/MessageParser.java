@@ -20,6 +20,7 @@ public class MessageParser {
         messageBuilder = new StringBuilder("\"");
         List<String> mixedArguments = Arrays.stream(line.split("\\+"))
             .map(String::trim).collect(Collectors.toCollection(ArrayList::new));
+        joinConsequentStrings(mixedArguments);
         normalizeArguments(mixedArguments);
         nonMessageArgs = new ArrayList<>();
         for (String argument : mixedArguments) {
@@ -30,6 +31,33 @@ public class MessageParser {
                 nonMessageArgs.add(argument);
             }
         }
+    }
+
+    private void joinConsequentStrings(List<String> mixedArguments) {
+        ListIterator<String> iterator = mixedArguments.listIterator();
+        while (iterator.hasNext()) {
+            String arg = iterator.next();
+            String next;
+            if (!iterator.hasNext()) {
+                break;
+            }
+            next = iterator.next();
+            if (isStringArg(arg) && isStringArg(next)) {
+                iterator.remove();
+                if (iterator.hasPrevious()) {
+                    iterator.previous();
+                }
+                iterator.set(arg.substring(0, arg.length() - 1) + next.substring(1));
+                continue;
+            }
+            if (iterator.hasPrevious()) {
+                iterator.previous();
+            }
+        }
+    }
+
+    private boolean isStringArg(String line) {
+        return line.startsWith("\"") && line.endsWith("\"");
     }
 
     public String finalizedMessage() {

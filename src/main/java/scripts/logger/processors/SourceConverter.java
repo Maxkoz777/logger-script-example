@@ -21,8 +21,6 @@ public class SourceConverter {
 
     private static final Pattern CONSOLE_LOGGER_EXISTS_PATTERN = Pattern.compile("System\\.(\\w+)\\.print(ln)?");
     private static final Pattern CLASS_DECLARATION = Pattern.compile("class\\s(\\w+)\\s?\\{?");
-    private static final Pattern LOGGING_STATEMENT_PATTERN = Pattern.compile(
-        "FileLogger\\.log\\(\\s?(.+),\\s*FileLogger\\.(\\w+)\\s*(,.+)?\\);");
 
     private static final Pattern FILE_LOGGER_EXISTS_PATTERN = Pattern.compile("FileLogger\\.log");
 
@@ -65,6 +63,7 @@ public class SourceConverter {
     }
 
     private void updateFile() {
+        System.out.println("\n" + path.toAbsolutePath() + "\n");
         inlineLoggerStatements();
         updateLoggerStatements();
         addImports();
@@ -154,9 +153,19 @@ public class SourceConverter {
         isWrapperImportNeeded = false;
         ListIterator<String> listIterator = linesOfCode.listIterator();
         while (listIterator.hasNext()) {
+            String line = listIterator.next();
+            if (line.contains("Debug.printJDOM(buffer, System.err)")) {
+                listIterator.set(
+                    line.replaceAll(
+                        "Debug.printJDOM\\(buffer, System.err\\)",
+                        "log.error(\"{}\", LoggerObjectWrapper.wrap(buffer))"
+                    )
+                );
+                continue;
+            }
             int index = listIterator.nextIndex();
-            if (isOutdatedLoggingStatement(listIterator.next())) {
-                listIterator.set(LoggerTransformationUtils.reformatLogger(linesOfCode, index));
+            if (isOutdatedLoggingStatement(line)) {
+                listIterator.set(LoggerTransformationUtils.reformatLogger(linesOfCode, index - 1));
             }
         }
     }

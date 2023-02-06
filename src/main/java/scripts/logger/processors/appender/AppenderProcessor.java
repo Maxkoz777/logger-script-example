@@ -5,7 +5,6 @@ import lombok.extern.slf4j.Slf4j;
 import scripts.logger.model.ProcessingUnit;
 import scripts.logger.processors.MessageParser;
 
-@Slf4j
 public abstract class AppenderProcessor {
 
     private static final Pattern LOGGING_DEBUG_MARK_PATTERN = Pattern.compile("Debug\\.printDebugMark\\(\\)(\\s*\\+)?\\s?,?");

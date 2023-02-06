@@ -3,13 +3,11 @@ package scripts.logger.processors;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import lombok.extern.slf4j.Slf4j;
 import scripts.logger.model.ProcessingUnit;
 import scripts.logger.processors.appender.AppenderProcessor;
 import scripts.logger.processors.appender.impl.ConsoleAppenderProcessor;
 import scripts.logger.processors.appender.impl.FileAppenderProcessor;
 
-@Slf4j
 public class LoggerTransformationUtils {
 
     private LoggerTransformationUtils(){}
