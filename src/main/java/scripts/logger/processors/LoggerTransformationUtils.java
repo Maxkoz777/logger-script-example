@@ -45,16 +45,6 @@ public class LoggerTransformationUtils {
             : new ConsoleAppenderProcessor(processingUnit);
     }
 
-
-
-    public static String getLoggerImports() {
-        String defaultImports = "\nimport lombok.extern.slf4j.Slf4j;\n";
-        if (isWrapperImportNeeded) {
-            defaultImports += "import com.cellpointdigital.mesb.log.LoggerObjectWrapper;";
-        }
-        return defaultImports;
-    }
-
     public static boolean checkParenthesis(String str) {
         int counter = 0;
         for (int i = 0; i < str.length(); i++) {

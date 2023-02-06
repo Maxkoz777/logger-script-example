@@ -1,5 +1,7 @@
 package scripts.logger.processors;
 
+import static scripts.logger.processors.LoggerTransformationUtils.isWrapperImportNeeded;
+
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -101,12 +103,20 @@ public class SourceConverter {
         }
     }
 
+    private String getLoggerImports() {
+        String defaultImports = "\nimport lombok.extern.slf4j.Slf4j;\n";
+        if (isWrapperImportNeeded) {
+            defaultImports += "import com.cellpointdigital.mesb.log.LoggerObjectWrapper;";
+        }
+        return defaultImports;
+    }
+
     private void addImports() {
         ListIterator<String> listIterator = linesOfCode.listIterator();
         while (listIterator.hasNext()) {
             String line = listIterator.next();
             if (line.contains("package")) {
-                listIterator.add(LoggerTransformationUtils.getLoggerImports());
+                listIterator.add(getLoggerImports());
                 break;
             }
         }
@@ -141,7 +151,7 @@ public class SourceConverter {
     }
 
     private void updateLoggerStatements() {
-        LoggerTransformationUtils.isWrapperImportNeeded = false;
+        isWrapperImportNeeded = false;
         ListIterator<String> listIterator = linesOfCode.listIterator();
         while (listIterator.hasNext()) {
             int index = listIterator.nextIndex();
