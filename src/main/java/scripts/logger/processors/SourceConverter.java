@@ -63,7 +63,6 @@ public class SourceConverter {
     }
 
     private void updateFile() {
-        System.out.println("\n" + path.toAbsolutePath() + "\n");
         inlineLoggerStatements();
         updateLoggerStatements();
         addImports();
