@@ -1,6 +1,5 @@
 package scripts.logger.processors;
 
-import static scripts.logger.processors.LoggerTransformationUtils.isWrapperImportNeeded;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -13,19 +12,27 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import scripts.logger.model.MyList;
+import scripts.logger.model.ProcessingUnit;
+import scripts.logger.processors.appender.AppenderProcessor;
+import scripts.logger.processors.appender.impl.ConsoleAppenderProcessor;
+import scripts.logger.processors.appender.impl.FileAppenderProcessor;
 
 public class SourceConverter {
 
     private final Path path;
     private MyList<String> linesOfCode;
+    public static boolean isWrapperImportNeeded;
 
     private static final Pattern CONSOLE_LOGGER_EXISTS_PATTERN = Pattern.compile("System\\.(\\w+)\\.print(ln)?");
     private static final Pattern CLASS_DECLARATION = Pattern.compile("class\\s(\\w+)\\s?\\{?");
     private static final Pattern FILE_LOGGER_EXISTS_PATTERN = Pattern.compile("FileLogger\\.log");
     private static final Pattern STACK_TRACE_PATTERN = Pattern.compile("(ex?)\\.printStackTrace\\(\\);");
+    private static final Pattern CONSOLE_LOGGING_STATEMENT = Pattern.compile("System\\.(\\w+)\\.print(ln)?\\((.+)\\);");
+    private static final Pattern LOGGING_STATEMENT_PATTERN = Pattern.compile("FileLogger\\.log\\(\\s?(.+),\\s*FileLogger\\.(\\w+)\\s*(,.+)?\\);");
 
     public SourceConverter(Path path) {
         this.path = path;
+        isWrapperImportNeeded = false;
     }
 
     public int process() {
@@ -123,21 +130,21 @@ public class SourceConverter {
     private void inlineLoggerStatements() {
         ListIterator<String> listIterator = linesOfCode.listIterator();
         while (listIterator.hasNext()) {
-            String line = listIterator.next();
-            if (isOutdatedLoggingStatement(line) && !line.contains(");") && listIterator.hasNext()) {
+            StringBuilder line = new StringBuilder(listIterator.next());
+            if (isOutdatedLoggingStatement(line.toString()) && !line.toString().contains(");") && listIterator.hasNext()) {
                 String followingLine = listIterator.next();
                 while (!followingLine.contains(");")) {
-                    line += " " + followingLine.trim();
+                    line.append(" ").append(followingLine.trim());
                     listIterator.remove();
                     followingLine = listIterator.next();
                 }
-                line += " " + followingLine.trim();
+                line.append(" ").append(followingLine.trim());
                 listIterator.remove();
                 if (listIterator.hasPrevious()) {
                     listIterator.previous();
                     listIterator.remove();
                 }
-                listIterator.add(line);
+                listIterator.add(line.toString());
             }
         }
     }
@@ -172,9 +179,35 @@ public class SourceConverter {
             }
             int index = listIterator.nextIndex();
             if (isOutdatedLoggingStatement(line)) {
-                listIterator.set(LoggerTransformationUtils.reformatLogger(linesOfCode, index - 1));
+                listIterator.set(reformatLogger(index - 1));
             }
         }
+    }
+
+    private String reformatLogger(int index) {
+        ProcessingUnit processingUnit = new ProcessingUnit(linesOfCode, index);
+        prepareProcessingUnit(processingUnit);
+        AppenderProcessor appenderProcessor = initializeAppenderProcessor(processingUnit);
+        return appenderProcessor.getUpdatedLoggerStatement();
+    }
+
+    private static void prepareProcessingUnit(ProcessingUnit processingUnit) {
+        Matcher fileLoggerMatcher = LOGGING_STATEMENT_PATTERN.matcher(processingUnit.getInitialLine());
+        Matcher consoleLoggerMatcher = CONSOLE_LOGGING_STATEMENT.matcher(processingUnit.getInitialLine());
+        if (fileLoggerMatcher.find()) {
+            processingUnit.setMatcher(fileLoggerMatcher);
+        } else {
+            consoleLoggerMatcher.find();
+            processingUnit.setMatcher(consoleLoggerMatcher);
+        }
+        processingUnit.setLoggingStatement(processingUnit.getMatcher().group());
+        processingUnit.initializeSurroundings();
+    }
+
+    private static AppenderProcessor initializeAppenderProcessor(ProcessingUnit processingUnit) {
+        return processingUnit.getInitialLine().contains("FileLogger")
+            ? new FileAppenderProcessor(processingUnit)
+            : new ConsoleAppenderProcessor(processingUnit);
     }
 
     private void rewriteJavaClass(String content, File file) throws IOException {

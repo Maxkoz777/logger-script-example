@@ -1,7 +1,6 @@
 package scripts.logger.processors.appender;
 
 import java.util.regex.Pattern;
-import lombok.extern.slf4j.Slf4j;
 import scripts.logger.model.ProcessingUnit;
 import scripts.logger.processors.MessageParser;
 
