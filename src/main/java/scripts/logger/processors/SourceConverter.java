@@ -21,8 +21,8 @@ public class SourceConverter {
 
     private static final Pattern CONSOLE_LOGGER_EXISTS_PATTERN = Pattern.compile("System\\.(\\w+)\\.print(ln)?");
     private static final Pattern CLASS_DECLARATION = Pattern.compile("class\\s(\\w+)\\s?\\{?");
-
     private static final Pattern FILE_LOGGER_EXISTS_PATTERN = Pattern.compile("FileLogger\\.log");
+    private static final Pattern STACK_TRACE_PATTERN = Pattern.compile("(ex?)\\.printStackTrace\\(\\);");
 
     public SourceConverter(Path path) {
         this.path = path;
@@ -145,7 +145,8 @@ public class SourceConverter {
     private boolean isOutdatedLoggingStatement(String line) {
         Matcher fileLoggerMatcher = FILE_LOGGER_EXISTS_PATTERN.matcher(line);
         Matcher consoleLoggerMatcher = CONSOLE_LOGGER_EXISTS_PATTERN.matcher(line);
-        return fileLoggerMatcher.find() || consoleLoggerMatcher.find();
+        Matcher stackTraceMatcher = STACK_TRACE_PATTERN.matcher(line);
+        return fileLoggerMatcher.find() || consoleLoggerMatcher.find() || stackTraceMatcher.find();
     }
 
     private void updateLoggerStatements() {
@@ -159,6 +160,13 @@ public class SourceConverter {
                         "Debug.printJDOM\\(buffer, System.err\\)",
                         "log.error(\"{}\", LoggerObjectWrapper.wrap(buffer))"
                     )
+                );
+                continue;
+            }
+            Matcher stackTraceMatcher = STACK_TRACE_PATTERN.matcher(line);
+            if (stackTraceMatcher.find()) {
+                listIterator.set(stackTraceMatcher.replaceFirst(
+                    "log.error(\"\", " + stackTraceMatcher.group(1) + ");")
                 );
                 continue;
             }
