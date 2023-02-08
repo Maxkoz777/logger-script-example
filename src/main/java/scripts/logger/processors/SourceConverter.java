@@ -109,9 +109,9 @@ public class SourceConverter {
     }
 
     private String getLoggerImports() {
-        String defaultImports = "\nimport lombok.extern.slf4j.Slf4j;\n";
+        String defaultImports = "\nimport lombok.extern.slf4j.Slf4j;";
         if (isWrapperImportNeeded) {
-            defaultImports += "import com.cellpointdigital.mesb.log.LoggerObjectWrapper;";
+            defaultImports += "\nimport com.cellpointdigital.mesb.log.LoggerObjectWrapper;";
         }
         return defaultImports;
     }

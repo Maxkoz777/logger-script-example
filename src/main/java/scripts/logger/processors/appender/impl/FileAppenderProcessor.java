@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import scripts.logger.model.ProcessingUnit;
-import scripts.logger.processors.SourceConverter;
 import scripts.logger.processors.appender.AppenderProcessor;
 import scripts.logger.processors.args.OptionalArgsProcessor;
 import scripts.logger.processors.args.impl.MultipleArgsProcessor;
@@ -67,7 +66,6 @@ public class FileAppenderProcessor extends AppenderProcessor {
         messageParser.processLine(line);
         OptionalArgsProcessor optionalArgsProcessor = null;
         if (optionalObject.isPresent()) {
-            SourceConverter.isWrapperImportNeeded = true;
             String additionalArgs = optionalObject.get().replaceFirst(",", "").trim();
             List<String> compliantArgsList = getCompliantAdditionalArguments(additionalArgs);
             optionalArgsProcessor = initializeArgsProcessor(compliantArgsList);
